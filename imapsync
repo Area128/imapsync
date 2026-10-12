@@ -557,6 +557,9 @@ https://imapsync.lamiral.info/FAQ.d/FAQ.Gmail.txt
                        NB: --delete2duplicates is far less violent than --delete2
                        since it removes only duplicates.
 
+ --delete2void       : Deletes messages in host2 that have no header and would
+                       otherwise be ignored.
+
  --delete2folders    : Delete folders in host2 that are not in host1.
                        Only the selected folders are considered; all folders by 
                        default but not all with --exclude --include --folder etc.
@@ -2807,7 +2810,14 @@ FOLDER: foreach my $h1_fold ( @{ $sync->{h1_folders_wanted} } )
         foreach my $m (@h2_msgs_not_in_cache) {
                 my $rc = parse_header_msg( $sync, $sync->{ imap2 }, $m, $h2_fold, $h2_heads_ref, $h2_fir_ref, 'Host2', \%h2_hash ) ;
                 my $h2_size = $h2_fir_ref->{$m}->{'RFC822.SIZE'} || 0 ;
-                if (! defined  $rc  )
+                if (! defined  $rc  and $sync->{ delete2void } )
+                {
+                        myprint( "Host2: $h2_fold/$m size $h2_size is void (no wanted headers). delete2void requested, marking as duplicate\n"  ) ;
+                        # void (noheader)
+                        $sync->{ acc2 }->{ nb_msg_duplicate } += 1 ;
+                        push  @h2_msgs_duplicate, $m  ;
+                }
+                elsif (! defined  $rc  )
                 {
                         myprint( "Host2: $h2_fold/$m size $h2_size ignored (no wanted headers so we ignore this message)\n"  ) ;
                         $h2_nb_msg_noheader += 1 ;
@@ -23181,6 +23191,7 @@ sub get_options_cmd
         'expunge2!'           => \$mysync->{ expunge2 },
         'uidexpunge2!'        => \$mysync->{ uidexpunge2 },
         'delete2duplicates!'  => \$mysync->{ delete2duplicates },
+        'delete2void!'        => \$mysync->{ delete2void },
         'delete1emptyfolders' => \$mysync->{ delete1emptyfolders },
         'delete2folders!'     => \$mysync->{ delete2folders },
         'delete2foldersonly=s'   => \$mysync->{ delete2foldersonly },
