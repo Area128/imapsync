@@ -2704,7 +2704,7 @@ FOLDER: foreach my $h1_fold ( @{ $sync->{h1_folders_wanted} } )
         }
         
         my ( $h1_heads_ref, $h1_fir_ref ) = ( {}, {} ) ;
-        $h1_heads_ref = $sync->{ imap1 }->parse_headers( [ @h1_msgs_not_in_cache ], @{ $sync->{ useheader } } ) if ( @h1_msgs_not_in_cache ) ;
+        $h1_heads_ref = $sync->{ imap1 }->parse_headers( [ @h1_msgs_not_in_cache ], "ALL" ) if ( @h1_msgs_not_in_cache ) ;
         $sync->{ debug } and myprint( "Host1: parsing headers of folder [$h1_fold] took ", timenext( $sync ), " s\n" ) ;
 
         @{ $h1_fir_ref }{ @h1_msgs } = ( undef ) ;
@@ -2780,7 +2780,7 @@ FOLDER: foreach my $h1_fold ( @{ $sync->{h1_folders_wanted} } )
         }
 
         my ( $h2_heads_ref, $h2_fir_ref ) = ( {}, {} );
-        $h2_heads_ref = $sync->{ imap2 }->parse_headers( [ @h2_msgs_not_in_cache ], @{ $sync->{ useheader } } ) if ( @h2_msgs_not_in_cache );
+        $h2_heads_ref = $sync->{ imap2 }->parse_headers( [ @h2_msgs_not_in_cache ], "ALL" ) if ( @h2_msgs_not_in_cache );
         $sync->{ debug } and myprint( "Host2: parsing headers of folder [$h2_fold] took ", timenext( $sync ), " s\n"  ) ;
 
         $sync->{ debug } and myprint( "Host2: getting flags idate and sizes of folder [$h2_fold]\n"  ) ;
