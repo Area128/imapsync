@@ -2704,7 +2704,11 @@ FOLDER: foreach my $h1_fold ( @{ $sync->{h1_folders_wanted} } )
         }
         
         my ( $h1_heads_ref, $h1_fir_ref ) = ( {}, {} ) ;
-        $h1_heads_ref = $sync->{ imap1 }->parse_headers( [ @h1_msgs_not_in_cache ], "ALL" ) if ( @h1_msgs_not_in_cache ) ;
+        { # limit the scope of $h1_all_heads_ref
+                my $h1_all_heads_ref = {} ;
+                $h1_all_heads_ref = $sync->{ imap1 }->parse_headers( [ @h1_msgs_not_in_cache ], "ALL" ) if ( @h1_msgs_not_in_cache ) ;
+                $h1_heads_ref = header_filter ( $sync, $h1_all_heads_ref ) ;
+        }
         $sync->{ debug } and myprint( "Host1: parsing headers of folder [$h1_fold] took ", timenext( $sync ), " s\n" ) ;
 
         @{ $h1_fir_ref }{ @h1_msgs } = ( undef ) ;
@@ -2780,7 +2784,11 @@ FOLDER: foreach my $h1_fold ( @{ $sync->{h1_folders_wanted} } )
         }
 
         my ( $h2_heads_ref, $h2_fir_ref ) = ( {}, {} );
-        $h2_heads_ref = $sync->{ imap2 }->parse_headers( [ @h2_msgs_not_in_cache ], "ALL" ) if ( @h2_msgs_not_in_cache );
+        { # limit the scope of $h2_all_heads_ref
+                my $h2_all_heads_ref = {} ;
+                $h2_all_heads_ref = $sync->{ imap2 }->parse_headers( [ @h2_msgs_not_in_cache ], "ALL" ) if ( @h2_msgs_not_in_cache ) ;
+                $h2_heads_ref = header_filter ( $sync, $h2_all_heads_ref ) ;
+        }
         $sync->{ debug } and myprint( "Host2: parsing headers of folder [$h2_fold] took ", timenext( $sync ), " s\n"  ) ;
 
         $sync->{ debug } and myprint( "Host2: getting flags idate and sizes of folder [$h2_fold]\n"  ) ;
@@ -17315,6 +17323,32 @@ sub parse_header_msg
 
         # we should not be here
         return ;
+}
+
+sub header_filter
+{
+        my( $mysync, $all_headers ) = @ARG ;
+
+        my $flt_headers = {  } ;
+        foreach my $m ( sort keys  %{ $all_headers }  )
+        {
+                # a hash, for a keyword header KEY value are list of strings [VAL1, VAL1_other, etc]
+                # Think of multiple "Received:" header lines.
+                my $new_headers = {  } ;
+                foreach my $h ( sort keys  %{ $all_headers->{ $m } }  )
+                {
+                        next if ( not ( exists $mysync->{ useheader_h }->{ uc  $h  } )
+                                and ( not exists $mysync->{ useheader_h }->{ 'ALL' } )
+                        ) ;
+                        foreach my $val ( @{ $all_headers->{ $m }->{ $h } } )
+                        {
+                                push  @{ $new_headers->{ $h } }, $val  ;
+                        }
+                }
+                $flt_headers->{ $m } = $new_headers  ;
+        }
+
+        return( $flt_headers ) ;
 }
 
 sub tests_header_construct 
